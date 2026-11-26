@@ -406,22 +406,6 @@
       display: flex;
     }
 
-    /* شريط الجمع الجماعي السريع */
-    .batch-add-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      background: #eff6ff;
-      border: 1.5px solid #bfdbfe;
-      padding: 12px 16px;
-      border-radius: 12px;
-      margin-bottom: 16px;
-      font-size: 0.88rem;
-      color: #1e3a8a;
-    }
-
     /* بطاقات المؤشرات KPI */
     .kpi-grid {
       display: grid;
@@ -1326,7 +1310,9 @@
       <div class="card">
         <div class="card-header">
           <div class="card-title"><i class="fa-solid fa-list-check"></i> نتائج الاتصالات وتصنيفاتها — <span id="section-shift-title" style="color: var(--primary);">الفترة الصباحية</span></div>
-          <span style="font-size: 0.84rem; color: var(--slate);">أي عدد يُضاف من أي جهاز يُجمع تلقائياً فوق الموجود</span>
+          <button type="button" class="btn btn-primary btn-sm" id="batch-add-btn" onclick="commitAllAdditions()">
+            <i class="fa-solid fa-plus"></i> جمع وإضافة الأعداد المدخلة للسحابة
+          </button>
         </div>
 
         <!-- تنبيه وضع الإجمالي المدمج -->
@@ -1339,17 +1325,6 @@
             <button class="btn btn-outline btn-sm" onclick="switchShift('morning')">تعديل الصباحي</button>
             <button class="btn btn-outline btn-sm" onclick="switchShift('evening')">تعديل المسائي</button>
           </div>
-        </div>
-
-        <!-- شريط الجمع الجماعي للأعداد المدخلة -->
-        <div class="batch-add-bar" id="batch-add-bar">
-          <div>
-            <i class="fa-solid fa-plus-circle"></i>
-            <strong>الجمع التراكمي من كل الأجهزة:</strong> اكتب الأعداد في خانات <em>(أضف عدداً)</em> ثم اضغط <strong>جمع الكل</strong>، وسيتم جمعها على أعداد الأجهزة الأخرى دون استبدالها!
-          </div>
-          <button type="button" class="btn btn-primary btn-sm" onclick="commitAllAdditions()">
-            <i class="fa-solid fa-plus"></i> جمع وإضافة الأعداد المدخلة للسحابة
-          </button>
         </div>
 
         <!-- خيار احتساب المكالمات الناجحة -->
@@ -1524,6 +1499,7 @@
     // ==================== الثوابت وتعريف التصنيفات ====================
     const REPORT_TITLE = 'Call Results Report';
     const DRAFT_KEY = 'call_results_shared_draft_v1';
+    const GLOBAL_FLAGS_KEY = 'call_results_global_success_flags_v1';
     const ARCHIVE_KEY = 'call_results_archive_v2';
 
     const SHIFT_NAMES = {
@@ -1535,23 +1511,23 @@
     const ARABIC_DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
     const CALL_CATEGORIES = [
-      { id: 'renew_soon', name: 'التجديد قريباً', icon: 'fa-clock', color: '#0ea5e9', bg: '#e0f2fe', defaultSuccess: true },
-      { id: 'no_answer', name: 'لا يوجد رد', icon: 'fa-phone-slash', color: '#64748b', bg: '#f1f5f9', defaultSuccess: false },
-      { id: 'phone_closed', name: 'الهاتف مقفل', icon: 'fa-power-off', color: '#475569', bg: '#e2e8f0', defaultSuccess: false },
-      { id: 'send_rep', name: 'إرسال مندوب للتجديد', icon: 'fa-motorcycle', color: '#10b981', bg: '#d1fae5', defaultSuccess: true },
-      { id: 'calling_rep', name: 'يتم الاتصال بالمندوب', icon: 'fa-user-tie', color: '#0d9488', bg: '#ccfbf1', defaultSuccess: true },
-      { id: 'call_6119', name: 'الاتصال بـ 6119', icon: 'fa-headset', color: '#6366f1', bg: '#e0e7ff', defaultSuccess: false },
-      { id: 'renewed', name: 'تجديد', icon: 'fa-circle-check', color: '#16a34a', bg: '#dcfce7', defaultSuccess: true },
-      { id: 'callback', name: 'إعادة الاتصال', icon: 'fa-phone-flip', color: '#f59e0b', bg: '#fef3c7', defaultSuccess: false },
-      { id: 'busy', name: 'مشغول', icon: 'fa-hourglass-half', color: '#d97706', bg: '#ffedd5', defaultSuccess: false },
-      { id: 'not_interested', name: 'غير مهتم', icon: 'fa-thumbs-down', color: '#ef4444', bg: '#fee2e2', defaultSuccess: false },
-      { id: 'moved_out', name: 'نقل خارج المنطقة', icon: 'fa-truck-moving', color: '#b91c1c', bg: '#fecaca', defaultSuccess: false },
-      { id: 'already_renewed', name: 'تم التجديد مسبقاً', icon: 'fa-check-double', color: '#059669', bg: '#d1fae5', defaultSuccess: true },
-      { id: 'needs_maintenance', name: 'يحتاج إلى صيانة', icon: 'fa-screwdriver-wrench', color: '#ea580c', bg: '#ffedd5', defaultSuccess: false },
-      { id: 'no_service_now', name: 'لا يحتاج الخدمة حالياً', icon: 'fa-ban', color: '#dc2626', bg: '#fee2e2', defaultSuccess: false },
-      { id: 'with_competitor', name: 'مع منافس', icon: 'fa-building', color: '#9333ea', bg: '#f3e8ff', defaultSuccess: false },
-      { id: 'traveling', name: 'مسافر', icon: 'fa-plane-departure', color: '#2563eb', bg: '#dbeafe', defaultSuccess: false },
-      { id: 'other', name: 'أخرى', icon: 'fa-ellipsis', color: '#4f46e5', bg: '#eef2ff', defaultSuccess: false }
+      { id: 'renew_soon',        name: 'التجديد قريباً',        icon: 'fa-clock',              color: '#0ea5e9', bg: '#e0f2fe', defaultSuccess: true },
+      { id: 'no_answer',         name: 'لا يوجد رد',            icon: 'fa-phone-slash',        color: '#64748b', bg: '#f1f5f9', defaultSuccess: false },
+      { id: 'phone_closed',      name: 'الهاتف مقفل',           icon: 'fa-power-off',          color: '#475569', bg: '#e2e8f0', defaultSuccess: false },
+      { id: 'send_rep',          name: 'إرسال مندوب للتجديد',   icon: 'fa-motorcycle',         color: '#10b981', bg: '#d1fae5', defaultSuccess: true },
+      { id: 'calling_rep',       name: 'يتم الاتصال بالمندوب',  icon: 'fa-user-tie',           color: '#0d9488', bg: '#ccfbf1', defaultSuccess: true },
+      { id: 'call_6119',         name: 'الاتصال بـ 6119',       icon: 'fa-headset',            color: '#6366f1', bg: '#e0e7ff', defaultSuccess: true },
+      { id: 'renewed',           name: 'تجديد',                 icon: 'fa-circle-check',       color: '#16a34a', bg: '#dcfce7', defaultSuccess: true },
+      { id: 'callback',          name: 'إعادة الاتصال',         icon: 'fa-phone-flip',         color: '#f59e0b', bg: '#fef3c7', defaultSuccess: false },
+      { id: 'busy',              name: 'مشغول',                 icon: 'fa-hourglass-half',     color: '#d97706', bg: '#ffedd5', defaultSuccess: false },
+      { id: 'not_interested',    name: 'غير مهتم',              icon: 'fa-thumbs-down',        color: '#ef4444', bg: '#fee2e2', defaultSuccess: true },
+      { id: 'moved_out',         name: 'نقل خارج المنطقة',      icon: 'fa-truck-moving',       color: '#b91c1c', bg: '#fecaca', defaultSuccess: true },
+      { id: 'already_renewed',   name: 'تم التجديد مسبقاً',     icon: 'fa-check-double',       color: '#059669', bg: '#d1fae5', defaultSuccess: true },
+      { id: 'needs_maintenance', name: 'يحتاج إلى صيانة',       icon: 'fa-screwdriver-wrench', color: '#ea580c', bg: '#ffedd5', defaultSuccess: true },
+      { id: 'no_service_now',    name: 'لا يحتاج الخدمة حالياً', icon: 'fa-ban',                color: '#dc2626', bg: '#fee2e2', defaultSuccess: true },
+      { id: 'with_competitor',   name: 'مع منافس',              icon: 'fa-building',           color: '#9333ea', bg: '#f3e8ff', defaultSuccess: true },
+      { id: 'traveling',         name: 'مسافر',                 icon: 'fa-plane-departure',    color: '#2563eb', bg: '#dbeafe', defaultSuccess: true },
+      { id: 'other',             name: 'أخرى',                  icon: 'fa-ellipsis',           color: '#4f46e5', bg: '#eef2ff', defaultSuccess: true }
     ];
 
     let chartInstance = null;
@@ -1605,6 +1581,28 @@
       pill.innerHTML = `<i class="fa-solid ${isWarning ? 'fa-triangle-exclamation' : 'fa-cloud-check'}"></i> <span>${text}</span>`;
     }
 
+    // ==================== مزامنة علامات الصح في جميع التواريخ ====================
+    function subscribeToGlobalSuccessFlags() {
+      try {
+        const savedFlags = JSON.parse(localStorage.getItem(GLOBAL_FLAGS_KEY) || 'null');
+        if (savedFlags) successFlags = { ...createDefaultSuccessFlags(), ...savedFlags };
+      } catch {}
+
+      const flagsRef = rtdb.ref('global_settings/successFlags');
+      flagsRef.on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          successFlags = { ...createDefaultSuccessFlags(), ...val };
+        } else {
+          successFlags = createDefaultSuccessFlags();
+          flagsRef.set(successFlags);
+        }
+        localStorage.setItem(GLOBAL_FLAGS_KEY, JSON.stringify(successFlags));
+        syncInputsFromStore();
+        recalculate();
+      });
+    }
+
     // ==================== العمليات الذرية للجمع في Firebase (Transaction) ====================
     function atomicAddCategory(shiftKey, catId, delta) {
       if (!delta || isNaN(delta)) return Promise.resolve();
@@ -1638,13 +1636,11 @@
         const val = snapshot.val();
         if (val) {
           shiftStore = normalizeShiftStore({ morning: val.morning, evening: val.evening });
-          successFlags = { ...createDefaultSuccessFlags(), ...(val.successFlags || {}) };
         } else {
           shiftStore = normalizeShiftStore(null);
-          successFlags = createDefaultSuccessFlags();
         }
 
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ date: dateStr, shiftStore, successFlags }));
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ date: dateStr, shiftStore }));
         syncInputsFromStore();
         recalculate();
         setCloudStatus('متزامن مع Firebase ✓', false);
@@ -1677,6 +1673,7 @@
       renderCategories();
       initChart();
 
+      subscribeToGlobalSuccessFlags();
       subscribeToDayReport(today);
       subscribeToCloudArchive();
     });
@@ -1748,7 +1745,7 @@
 
       const isCombined = (shift === 'combined');
       document.getElementById('combined-banner').classList.toggle('show', isCombined);
-      document.getElementById('batch-add-bar').style.display = isCombined ? 'none' : 'flex';
+      document.getElementById('batch-add-btn').style.display = isCombined ? 'none' : 'inline-flex';
       document.getElementById('success-mode-bar').style.display = isCombined ? 'none' : 'flex';
 
       const shiftLabel = SHIFT_NAMES[shift];
@@ -1891,7 +1888,7 @@
               <div class="progress-bar">
                 <div class="progress-fill" id="bar-${cat.id}" style="background:${cat.color};"></div>
               </div>
-              <label class="success-check" title="احتساب هذه الحالة ضمن المكالمات الناجحة">
+              <label class="success-check" title="احتساب هذه الحالة ضمن المكالمات الناجحة في كل التواريخ">
                 <input type="checkbox" id="succ-${cat.id}" ${cat.defaultSuccess ? 'checked' : ''} onchange="onSuccessFlagToggle('${cat.id}')" />
                 <span>ناجحة</span>
               </label>
@@ -1948,10 +1945,16 @@
       });
     }
 
+    // حفظ ومزامنة علامة الصح على المستوى العالمي لجميع التواريخ
     function onSuccessFlagToggle(id) {
       const checked = document.getElementById(`succ-${id}`).checked;
       successFlags[id] = checked;
-      saveFieldToCloud(`successFlags/${id}`, checked);
+      localStorage.setItem(GLOBAL_FLAGS_KEY, JSON.stringify(successFlags));
+
+      rtdb.ref(`global_settings/successFlags/${id}`).set(checked)
+        .then(() => setCloudStatus('تمت مزامنة علامات النجاح في كل التواريخ ✓', false))
+        .catch(() => setCloudStatus('تعذر مزامنة علامة النجاح', true));
+
       recalculate();
     }
 
@@ -2172,8 +2175,7 @@
       if (currentShift === 'combined') {
         rtdb.ref(`shared_reports/${dateStr}`).set({
           morning: emptyShift,
-          evening: emptyShift,
-          successFlags: createDefaultSuccessFlags()
+          evening: emptyShift
         }).then(() => showToast('تم تصفير الفترتين في السحابة', 'success'));
       } else {
         rtdb.ref(`shared_reports/${dateStr}/${currentShift}`).set(emptyShift)
@@ -2596,11 +2598,6 @@
       document.getElementById('meta-date').value = item.date;
       updateDayName();
 
-      let loadedFlags = createDefaultSuccessFlags();
-      if (item.successFlags) {
-        loadedFlags = { ...loadedFlags, ...item.successFlags };
-      }
-
       let loadedStore = normalizeShiftStore(item.shiftSnapshot);
       if (!item.shiftSnapshot) {
         const targetShift = item.shift === 'evening' ? 'evening' : 'morning';
@@ -2615,8 +2612,7 @@
 
       rtdb.ref(`shared_reports/${item.date}`).set({
         morning: loadedStore.morning,
-        evening: loadedStore.evening,
-        successFlags: loadedFlags
+        evening: loadedStore.evening
       }).then(() => {
         subscribeToDayReport(item.date);
         switchShift(item.shift || 'morning');
