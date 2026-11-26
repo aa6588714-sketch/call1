@@ -238,7 +238,7 @@
     /* معلومات التقرير */
     .meta-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 16px;
     }
 
@@ -297,6 +297,77 @@
       border-radius: 10px;
       white-space: nowrap;
       border: 1.5px solid #c7d2fe;
+    }
+
+    /* قائمة أسماء الموظفين وعلامة الصح */
+    .agents-section {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .agents-header {
+      font-weight: 800;
+      font-size: 0.94rem;
+      color: var(--dark);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .agents-list-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .agent-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: #f8fafc;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--dark);
+      transition: 0.2s;
+      user-select: none;
+    }
+
+    .agent-chip:hover {
+      border-color: #a5b4fc;
+      background: #fff;
+    }
+
+    .agent-chip input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--success);
+      cursor: pointer;
+    }
+
+    .agent-chip.checked {
+      background: var(--success-bg);
+      border-color: #34d399;
+      color: #065f46;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.14);
+    }
+
+    .agents-combined-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .agents-sub-label {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--slate);
+      margin-bottom: 6px;
     }
 
     /* محدد الفترة (صباحي / مسائي / صباحي مع مسائي) */
@@ -1225,11 +1296,6 @@
           </div>
 
           <div class="form-group">
-            <label id="agent-label">اسم الموظف (الفترة الصباحية)</label>
-            <input type="text" id="meta-agent" class="form-control" placeholder="اكتب اسم الموظف أو المشرف" oninput="onMetaChange()" />
-          </div>
-
-          <div class="form-group">
             <label id="notes-label">ملاحظات (الفترة الصباحية)</label>
             <input type="text" id="meta-notes" class="form-control" placeholder="ملاحظات اختيارية..." oninput="onMetaChange()" />
           </div>
@@ -1255,6 +1321,15 @@
               <span class="shift-pill-num" id="pill-combined">0</span>
             </button>
           </div>
+        </div>
+
+        <!-- قائمة أسماء الموظفين مع علامة الصح -->
+        <div class="agents-section">
+          <div class="agents-header">
+            <i class="fa-solid fa-users" style="color: var(--primary);"></i>
+            <span id="agents-section-title">أسماء الموظفين — الفترة الصباحية</span>
+          </div>
+          <div id="agents-container"></div>
         </div>
       </div>
 
@@ -1332,7 +1407,7 @@
           <span><i class="fa-solid fa-sliders"></i> <strong>طريقة حساب المكالمات الناجحة (وبالتالي الغير ناجحة):</strong></span>
           <label>
             <input type="radio" name="successMode" value="auto" checked onchange="toggleSuccessMode()" />
-            تلقائي (مجموع الحالات المؤشر عليها كـ "ناجحة")
+            تلقائي (مجموع الحالات المؤشر عليها كـ "ناجحة" — متزامنة في كل التواريخ)
           </label>
           <label>
             <input type="radio" name="successMode" value="manual" onchange="toggleSuccessMode()" />
@@ -1496,7 +1571,7 @@
     firebase.initializeApp(firebaseConfig);
     const rtdb = firebase.database();
 
-    // ==================== الثوابت وتعريف التصنيفات ====================
+    // ==================== الثوابت وتعريف الموظفين والتصنيفات ====================
     const REPORT_TITLE = 'Call Results Report';
     const DRAFT_KEY = 'call_results_shared_draft_v1';
     const GLOBAL_FLAGS_KEY = 'call_results_global_success_flags_v1';
@@ -1509,6 +1584,21 @@
     };
 
     const ARABIC_DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+    const MORNING_AGENTS = [
+      { id: 'm1', name: 'ايه عمار' },
+      { id: 'm2', name: 'زهراء ياسر' },
+      { id: 'm3', name: 'هبه قاسم' },
+      { id: 'm4', name: 'زينب احمد' }
+    ];
+
+    const EVENING_AGENTS = [
+      { id: 'e1', name: 'احمد ابراهيم' },
+      { id: 'e2', name: 'احمد عمار' },
+      { id: 'e3', name: 'محمد خليل' },
+      { id: 'e4', name: 'عبيده علي' },
+      { id: 'e5', name: 'محمد نجم' }
+    ];
 
     const CALL_CATEGORIES = [
       { id: 'renew_soon',        name: 'التجديد قريباً',        icon: 'fa-clock',              color: '#0ea5e9', bg: '#e0f2fe', defaultSuccess: true },
@@ -1555,7 +1645,7 @@
           counts: { ...createEmptyCounts(), ...(src.counts || {}) },
           successMode: src.successMode || 'auto',
           manualSuccess: src.manualSuccess || 0,
-          agent: src.agent || '',
+          agents: src.agents && typeof src.agents === 'object' ? { ...src.agents } : {},
           notes: src.notes || ''
         };
       });
@@ -1671,6 +1761,7 @@
       updateDayName();
 
       renderCategories();
+      renderAgentsUI();
       initChart();
 
       subscribeToGlobalSuccessFlags();
@@ -1699,14 +1790,11 @@
     function onMetaChange() {
       if (currentShift === 'combined') return;
       const shiftKey = currentShift;
-      const agentVal = document.getElementById('meta-agent').value;
       const notesVal = document.getElementById('meta-notes').value;
-      shiftStore[shiftKey].agent = agentVal;
       shiftStore[shiftKey].notes = notesVal;
 
       clearTimeout(metaDebounce);
       metaDebounce = setTimeout(() => {
-        saveFieldToCloud(`${shiftKey}/agent`, agentVal);
         saveFieldToCloud(`${shiftKey}/notes`, notesVal);
       }, 450);
     }
@@ -1719,14 +1807,67 @@
       if (tab === 'archive') renderArchive();
     }
 
-    // ==================== التبديل بين الفترات ====================
+    // ==================== أسماء الموظفين وعلامات الصح ====================
+    function renderAgentsUI() {
+      const container = document.getElementById('agents-container');
+      const titleEl = document.getElementById('agents-section-title');
+
+      if (currentShift === 'morning') {
+        titleEl.textContent = 'أسماء موظفي الفترة الصباحية';
+        container.innerHTML = `<div class="agents-list-grid">${buildAgentChipsHtml(MORNING_AGENTS, 'morning')}</div>`;
+      } else if (currentShift === 'evening') {
+        titleEl.textContent = 'أسماء موظفي الفترة المسائية';
+        container.innerHTML = `<div class="agents-list-grid">${buildAgentChipsHtml(EVENING_AGENTS, 'evening')}</div>`;
+      } else {
+        titleEl.textContent = 'أسماء الموظفين (صباحي مع مسائي)';
+        container.innerHTML = `
+          <div class="agents-combined-wrap">
+            <div>
+              <div class="agents-sub-label"><i class="fa-solid fa-sun" style="color:#f59e0b;"></i> الفترة الصباحية:</div>
+              <div class="agents-list-grid">${buildAgentChipsHtml(MORNING_AGENTS, 'morning')}</div>
+            </div>
+            <div>
+              <div class="agents-sub-label"><i class="fa-solid fa-moon" style="color:#334155;"></i> الفترة المسائية:</div>
+              <div class="agents-list-grid">${buildAgentChipsHtml(EVENING_AGENTS, 'evening')}</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function buildAgentChipsHtml(list, shiftKey) {
+      const selectedMap = (shiftStore[shiftKey] && shiftStore[shiftKey].agents) || {};
+      return list.map(ag => {
+        const isChecked = !!selectedMap[ag.id];
+        return `
+          <label class="agent-chip ${isChecked ? 'checked' : ''}">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="onAgentToggle('${shiftKey}', '${ag.id}', this.checked)" />
+            <span>${ag.name}</span>
+          </label>
+        `;
+      }).join('');
+    }
+
+    function onAgentToggle(shiftKey, agentId, checked) {
+      if (!shiftStore[shiftKey].agents) shiftStore[shiftKey].agents = {};
+      shiftStore[shiftKey].agents[agentId] = checked;
+      renderAgentsUI();
+      saveFieldToCloud(`${shiftKey}/agents/${agentId}`, checked);
+    }
+
+    function getShiftAgentsText(shiftKey) {
+      const list = shiftKey === 'morning' ? MORNING_AGENTS : EVENING_AGENTS;
+      const selectedMap = (shiftStore[shiftKey] && shiftStore[shiftKey].agents) || {};
+      const names = list.filter(ag => !!selectedMap[ag.id]).map(ag => ag.name);
+      return names.join('، ');
+    }
+
     function getCombinedAgentText() {
-      const m = (shiftStore.morning.agent || '').trim();
-      const e = (shiftStore.evening.agent || '').trim();
-      if (m && e && m !== e) return `${m} (صباحي) / ${e} (مسائي)`;
-      if (m && e) return m;
-      if (m) return `${m} (صباحي)`;
-      if (e) return `${e} (مسائي)`;
+      const m = getShiftAgentsText('morning');
+      const e = getShiftAgentsText('evening');
+      if (m && e) return `صباحي (${m}) | مسائي (${e})`;
+      if (m) return `صباحي (${m})`;
+      if (e) return `مسائي (${e})`;
       return '';
     }
 
@@ -1737,6 +1878,7 @@
       return m || e || '';
     }
 
+    // ==================== التبديل بين الفترات ====================
     function switchShift(shift) {
       currentShift = shift;
       document.querySelectorAll('.shift-btn').forEach(btn => {
@@ -1763,30 +1905,22 @@
     function syncInputsFromStore(forceMetaUpdate = false) {
       const isCombined = (currentShift === 'combined');
 
-      const agentInput = document.getElementById('meta-agent');
       const notesInput = document.getElementById('meta-notes');
-      const agentLabel = document.getElementById('agent-label');
       const notesLabel = document.getElementById('notes-label');
 
       if (isCombined) {
-        agentLabel.textContent = 'الموظفون (صباحي + مسائي)';
         notesLabel.textContent = 'الملاحظات (صباحي + مسائي)';
-        agentInput.value = getCombinedAgentText() || 'غير محدد';
         notesInput.value = getCombinedNotesText();
-        agentInput.readOnly = true;
         notesInput.readOnly = true;
       } else {
-        agentLabel.textContent = `اسم الموظف (${SHIFT_NAMES[currentShift]})`;
         notesLabel.textContent = `ملاحظات (${SHIFT_NAMES[currentShift]})`;
-        if (forceMetaUpdate || document.activeElement !== agentInput) {
-          agentInput.value = shiftStore[currentShift].agent || '';
-        }
         if (forceMetaUpdate || document.activeElement !== notesInput) {
           notesInput.value = shiftStore[currentShift].notes || '';
         }
-        agentInput.readOnly = false;
         notesInput.readOnly = false;
       }
+
+      renderAgentsUI();
 
       CALL_CATEGORIES.forEach(cat => {
         const totalEl = document.getElementById(`cloud-val-${cat.id}`);
@@ -1945,7 +2079,6 @@
       });
     }
 
-    // حفظ ومزامنة علامة الصح على المستوى العالمي لجميع التواريخ
     function onSuccessFlagToggle(id) {
       const checked = document.getElementById(`succ-${id}`).checked;
       successFlags[id] = checked;
@@ -2024,7 +2157,7 @@
         const stats = calculateShiftStats(currentShift);
         successful = stats.successful;
         successMode = shiftStore[currentShift].successMode;
-        agentText = (shiftStore[currentShift].agent || '').trim() || 'غير محدد';
+        agentText = getShiftAgentsText(currentShift) || 'غير محدد';
         notesText = (shiftStore[currentShift].notes || '').trim();
       }
 
@@ -2170,7 +2303,7 @@
       if (!confirm(msg)) return;
 
       const dateStr = document.getElementById('meta-date').value || getTodayISO();
-      const emptyShift = { counts: createEmptyCounts(), successMode: 'auto', manualSuccess: 0, agent: '', notes: '' };
+      const emptyShift = { counts: createEmptyCounts(), successMode: 'auto', manualSuccess: 0, agents: {}, notes: '' };
 
       if (currentShift === 'combined') {
         rtdb.ref(`shared_reports/${dateStr}`).set({
@@ -2228,7 +2361,7 @@
         `📊 *${REPORT_TITLE}*`,
         `🕒 الفترة: ${data.shiftName}`,
         `📅 اليوم والتاريخ: ${data.dayAndDate}`,
-        `👤 الموظف: ${data.agent}`,
+        `👥 الموظفون: ${data.agent}`,
         `━━━━━━━━━━━━━━`,
         `📞 إجمالي المكالمات (جميع المكالمات إجمالياً): ${data.total}`,
         `✅ عدد المكالمات الناجحة: ${data.successful} (${data.successRate}%)`,
@@ -2300,7 +2433,7 @@
         [REPORT_TITLE],
         ['الفترة', data.shiftName],
         ['اليوم والتاريخ', data.dayAndDate],
-        ['اسم الموظف', data.agent],
+        ['الموظفون', data.agent],
         ['ملاحظات', data.notes || '-'],
         [],
         ['إجمالي المكالمات', data.total],
@@ -2380,7 +2513,7 @@
         <div class="pdf-meta">
           <div><strong>الفترة:</strong> ${data.shiftName}</div>
           <div><strong>اليوم والتاريخ:</strong> ${data.dayAndDate}</div>
-          <div><strong>الموظف / المسؤول:</strong> ${data.agent}</div>
+          <div><strong>الموظفون:</strong> ${data.agent}</div>
           <div><strong>ملاحظات:</strong> ${data.notes || 'لا توجد'}</div>
         </div>
 
@@ -2498,8 +2631,9 @@
                 <i class="fa-regular fa-calendar"></i> ${item.dayAndDate || item.date}
               </div>
               <div class="archive-date">
-                <i class="fa-regular fa-user"></i> ${item.agent} &nbsp;|&nbsp; حُفظ: ${item.savedAt}
+                <i class="fa-regular fa-user"></i> ${item.agent}
               </div>
+              <div class="archive-date">حُفظ: ${item.savedAt}</div>
             </div>
             <span class="archive-shift-badge">${item.shiftName || 'صباحي'}</span>
           </div>
@@ -2578,7 +2712,7 @@
         <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px; background:#f8fafc; padding:12px; border-radius:10px;">
           <span><strong>الفترة:</strong> ${item.shiftName}</span>
           <span><strong>اليوم والتاريخ:</strong> ${item.dayAndDate || item.date}</span>
-          <span><strong>الموظف:</strong> ${item.agent}</span>
+          <span><strong>الموظفون:</strong> ${item.agent}</span>
           <span style="color:var(--success);"><strong>الناجحة:</strong> ${item.successful} (${item.successRate}%)</span>
           <span style="color:var(--danger);"><strong>الغير ناجحة:</strong> ${unsuccessful} (${unsuccessfulRate}%)</span>
           <span><strong>ملاحظات:</strong> ${item.notes || '-'}</span>
@@ -2605,7 +2739,7 @@
           counts: { ...createEmptyCounts(), ...(item.counts || {}) },
           successMode: item.successMode === 'manual' ? 'manual' : 'auto',
           manualSuccess: item.successful || 0,
-          agent: item.agent === 'غير محدد' ? '' : item.agent,
+          agents: {},
           notes: item.notes || ''
         };
       }
